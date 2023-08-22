@@ -20,7 +20,7 @@
    <string>at.%-mass.%-vol.% Converter by 誠</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="converter.qrc">
+   <iconset>
     <normaloff>:/icon/ユウカ.ico</normaloff>:/icon/ユウカ.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
@@ -162,6 +162,9 @@ p, li { white-space: pre-wrap; }
          <property name="readOnly">
           <bool>false</bool>
          </property>
+         <property name="maximum">
+          <double>999.990000000000009</double>
+         </property>
         </widget>
        </item>
        <item row="1" column="0">
@@ -176,6 +179,9 @@ p, li { white-space: pre-wrap; }
          <property name="readOnly">
           <bool>false</bool>
          </property>
+         <property name="maximum">
+          <double>999.990000000000009</double>
+         </property>
         </widget>
        </item>
        <item row="2" column="0">
@@ -189,6 +195,9 @@ p, li { white-space: pre-wrap; }
         <widget class="QDoubleSpinBox" name="doubleSpinBox_atomicmass_3">
          <property name="readOnly">
           <bool>false</bool>
+         </property>
+         <property name="maximum">
+          <double>999.990000000000009</double>
          </property>
         </widget>
        </item>
@@ -228,6 +237,9 @@ p, li { white-space: pre-wrap; }
        </item>
        <item row="0" column="1">
         <widget class="QDoubleSpinBox" name="doubleSpinBox_massdensity_1">
+         <property name="maximum">
+          <double>999.990000000000009</double>
+         </property>
          <property name="singleStep">
           <double>0.050000000000000</double>
          </property>

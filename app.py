@@ -105,8 +105,9 @@ class Converter(Ui_MainWindow):
             label_widget.setText(element.get_element_str())
             label_widget.setObjectName("label_atomicmass_"+str(index))
             doubleSpinBox_widget = QtWidgets.QDoubleSpinBox(self.groupBox_atomicmass)
-            doubleSpinBox_widget.setValue(element.get_atomic_mass())
+            doubleSpinBox_widget.setMaximum(999.9)
             doubleSpinBox_widget.setSingleStep(0.05)
+            doubleSpinBox_widget.setValue(element.get_atomic_mass())
             doubleSpinBox_widget.setObjectName("doubleSpinBox_atomicmass_"+str(index))
             self.formLayout_2.addRow(label_widget,doubleSpinBox_widget)
         # Update Component info.
@@ -117,8 +118,9 @@ class Converter(Ui_MainWindow):
             label_widget.setText(component.get_composition_str())
             label_widget.setObjectName("label_massdensity_"+str(index))
             doubleSpinBox_widget = QtWidgets.QDoubleSpinBox(self.groupBox_massdensity)
-            doubleSpinBox_widget.setValue(component.get_mass_density())
+            doubleSpinBox_widget.setMaximum(999.9)
             doubleSpinBox_widget.setSingleStep(0.05)
+            doubleSpinBox_widget.setValue(component.get_mass_density())
             doubleSpinBox_widget.setObjectName("doubleSpinBox_massdensity_"+str(index))
             self.formLayout.addRow(label_widget,doubleSpinBox_widget)
     def update_component_and_element_list(self):
