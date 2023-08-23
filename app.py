@@ -98,8 +98,11 @@ class Converter(Ui_MainWindow):
         self.media_str = self.lineEdit_media.text()
         self.component_list, self.element_list = split_substance_and_media(self.substance_str,self.media_str)
         # Update Element info.
-        for row in range(self.formLayout_2.rowCount(),-1,-1):
-            self.formLayout_2.removeRow(row)
+        if self.formLayout_2.rowCount() > 0:
+            # print('rowDCount:',self.formLayout_2.rowCount())
+            for row in range(self.formLayout_2.rowCount()-1,-1,-1):
+                # print('update_materials,removeRow-1,row:',row)
+                self.formLayout_2.removeRow(row)
         for index,element in enumerate(self.element_list):
             label_widget = QtWidgets.QLabel(self.groupBox_atomicmass)
             label_widget.setText(element.get_element_str())
@@ -111,8 +114,11 @@ class Converter(Ui_MainWindow):
             doubleSpinBox_widget.setObjectName("doubleSpinBox_atomicmass_"+str(index))
             self.formLayout_2.addRow(label_widget,doubleSpinBox_widget)
         # Update Component info.
-        for row in range(self.formLayout.rowCount(),-1,-1):
-            self.formLayout.removeRow(row)
+        if self.formLayout.rowCount() > 0:
+            # print('rowDCount:',self.formLayout.rowCount())
+            for row in range(self.formLayout.rowCount()-1,-1,-1):
+                # print('update_materials,removeRow-2,row:',row)
+                self.formLayout.removeRow(row)
         for index,component in enumerate(self.component_list):
             label_widget = QtWidgets.QLabel(self.groupBox_massdensity)
             label_widget.setText(component.get_composition_str())
@@ -127,12 +133,14 @@ class Converter(Ui_MainWindow):
         # Update Element info.
         print("Element info.:")
         for row in range(self.formLayout_2.rowCount()):
+            # print('update_component_and_element_list,itemAt-1,row:',row)
             atomic_mass_str = self.formLayout_2.itemAt(row,QFormLayout.FieldRole).widget().text()
             self.element_list[row].set_atomic_mass(float(atomic_mass_str))
             print(self.element_list[row].get_element_str(),":",self.element_list[row].get_atomic_mass(),"u")
         # Update Component info.
         print("Component info.:")
         for row in range(self.formLayout.rowCount()):
+            # print('update_component_and_element_list,itemAt-2,row:',row)
             mass_density_str = self.formLayout.itemAt(row,QFormLayout.FieldRole).widget().text()
             self.component_list[row].set_mass_density(float(mass_density_str))
             print(self.component_list[row].get_composition_str(),":",self.component_list[row].get_mass_density(),"/cm^3")

@@ -254,6 +254,9 @@ p, li { white-space: pre-wrap; }
        </item>
        <item row="1" column="1">
         <widget class="QDoubleSpinBox" name="doubleSpinBox_massdensity_2">
+         <property name="maximum">
+          <double>999.990000000000009</double>
+         </property>
          <property name="singleStep">
           <double>0.050000000000000</double>
          </property>
