@@ -362,12 +362,24 @@ p, li { white-space: pre-wrap; }
     </property>
     <addaction name="actionQuit"/>
    </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionComponent_Manegement"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionQuit">
    <property name="text">
     <string>Quit</string>
+   </property>
+  </action>
+  <action name="actionComponent_Manegement">
+   <property name="text">
+    <string>Component Manegement</string>
    </property>
   </action>
  </widget>

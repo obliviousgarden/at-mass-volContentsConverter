@@ -1,44 +1,46 @@
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtWidgets import QFormLayout
+from PyQt5.QtWidgets import QFormLayout, QDialog
 import numpy as np
 from utils.component import Component
 from utils.element import Element
 import os, sys
-from utils.common_components import Co,SrF2
 from PyQt5.QtCore import QRegExp
-from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtGui import QRegExpValidator, QIcon, QPixmap
 
 from ui.converter import Ui_MainWindow
+from ui.component_management import Ui_ComponentManagementDialog
 from utils.str_splitter import split_substance_and_media
+from utils.common_components import CommonComponentTool
 
 
 class Converter(Ui_MainWindow):
-    def __init__(self):
+    def __init__(self,common_component_tool:CommonComponentTool):
         super(Converter, self).__init__()
+        self.common_component_tool = common_component_tool
         # dict for intro
         self.intro_text = {
-            "en":"This is a converter that converts at.%, mass.% and col.% and estimates the diameter or intervl of the ideal spatial distribution. \n"
-                 "Substance and Media will be automatically identified, and if the parameters (mass density and atomic mass) corresponding to the component or element exist in the database, \n"
-                 "they will be automatically updated to the groupbox below.",
-            "cn":"这是一个转换器，用来换算at.%, mass.% and col.%，并估计理想空间分布的直径或者间距。\n"
-                 "Substance和Media会被自动识别，如果对应物质或元素的参数（质量密度和原子质量）是数据库中存在的，\n"
-                 "那么将会被自动更新到下方的组框中。",
-            "jp":"これはat.%とmass.%とcol.%とを変換し、理想的な空間分布の直径や間隔を推定するコンバータです。\n"
-                 "SubstanceやMediaを自動認識し、データベースに組成や元素に対応するパラメータ(質量密度や原子質量)が存在すれば、\n"
-                 "下のグループボックスに自動的に更新されます。"
+            "en": "This is a converter that converts at.%, mass.% and col.% and estimates the diameter or intervl of the ideal spatial distribution. \n"
+                  "Substance and Media will be automatically identified, and if the parameters (mass density and atomic mass) corresponding to the component or element exist in the database, \n"
+                  "they will be automatically updated to the groupbox below.",
+            "cn": "这是一个转换器，用来换算at.%, mass.% and col.%，并估计理想空间分布的直径或者间距。\n"
+                  "Substance和Media会被自动识别，如果对应物质或元素的参数（质量密度和原子质量）是数据库中存在的，\n"
+                  "那么将会被自动更新到下方的组框中。",
+            "jp": "これはat.%とmass.%とcol.%とを変換し、理想的な空間分布の直径や間隔を推定するコンバータです。\n"
+                  "SubstanceやMediaを自動認識し、データベースに組成や元素に対応するパラメータ(質量密度や原子質量)が存在すれば、\n"
+                  "下のグループボックスに自動的に更新されます。"
         }
         self.substance_str = "Co"
         self.media_str = "SrF2"
-        self.component_list = [Co,SrF2]
-        self.element_list = [Element('Co',58.933194),Element('F',18.998403163),Element('Sr',87.62)]
+        self.component_list = [Component('Co', 8.9), Component('SrF2', 4.24)]
+        self.element_list = [Element('Co', 58.933194), Element('F', 18.998403163), Element('Sr', 87.62)]
         self.at_content = 56.58
-        self.mass_content = at_mass_converter(component_list=self.component_list,element_list=self.element_list,at_content=self.at_content)
-        self.vol_content = vol_mass_converter(component_list=self.component_list,mass_content=self.mass_content)
+        self.mass_content = at_mass_converter(component_list=self.component_list, element_list=self.element_list,
+                                              at_content=self.at_content)
+        self.vol_content = vol_mass_converter(component_list=self.component_list, mass_content=self.mass_content)
         self.recalculating_flag = False
         self.reestimating_flag = False
         self.diameter = 3.0
         self.interval = 0.5
-
 
     def setupUi(self, MainWindow):
         # Father's UI
@@ -82,7 +84,6 @@ class Converter(Ui_MainWindow):
         self.doubleSpinBox_estimation_diameter.valueChanged.connect(self.reestimate_spactial_from_diameter)
         self.doubleSpinBox_estimation_interval.valueChanged.connect(self.reestimate_spactial_from_interval)
 
-
     def update_textEdit_intro(self):
         if self.radioButton_intro_en.isChecked():
             self.textEdit_intro.setText(self.intro_text.get("en"))
@@ -96,54 +97,56 @@ class Converter(Ui_MainWindow):
     def update_materials(self):
         self.substance_str = self.lineEdit_substance.text()
         self.media_str = self.lineEdit_media.text()
-        self.component_list, self.element_list = split_substance_and_media(self.substance_str,self.media_str)
+        self.component_list, self.element_list = split_substance_and_media(self.common_component_tool,self.substance_str, self.media_str)
         # Update Element info.
         if self.formLayout_2.rowCount() > 0:
             # print('rowDCount:',self.formLayout_2.rowCount())
-            for row in range(self.formLayout_2.rowCount()-1,-1,-1):
+            for row in range(self.formLayout_2.rowCount() - 1, -1, -1):
                 # print('update_materials,removeRow-1,row:',row)
                 self.formLayout_2.removeRow(row)
-        for index,element in enumerate(self.element_list):
+        for index, element in enumerate(self.element_list):
             label_widget = QtWidgets.QLabel(self.groupBox_atomicmass)
             label_widget.setText(element.get_element_str())
-            label_widget.setObjectName("label_atomicmass_"+str(index))
+            label_widget.setObjectName("label_atomicmass_" + str(index))
             doubleSpinBox_widget = QtWidgets.QDoubleSpinBox(self.groupBox_atomicmass)
             doubleSpinBox_widget.setMaximum(999.9)
             doubleSpinBox_widget.setSingleStep(0.05)
             doubleSpinBox_widget.setValue(element.get_atomic_mass())
-            doubleSpinBox_widget.setObjectName("doubleSpinBox_atomicmass_"+str(index))
-            self.formLayout_2.addRow(label_widget,doubleSpinBox_widget)
+            doubleSpinBox_widget.setObjectName("doubleSpinBox_atomicmass_" + str(index))
+            self.formLayout_2.addRow(label_widget, doubleSpinBox_widget)
         # Update Component info.
         if self.formLayout.rowCount() > 0:
             # print('rowDCount:',self.formLayout.rowCount())
-            for row in range(self.formLayout.rowCount()-1,-1,-1):
+            for row in range(self.formLayout.rowCount() - 1, -1, -1):
                 # print('update_materials,removeRow-2,row:',row)
                 self.formLayout.removeRow(row)
-        for index,component in enumerate(self.component_list):
+        for index, component in enumerate(self.component_list):
             label_widget = QtWidgets.QLabel(self.groupBox_massdensity)
             label_widget.setText(component.get_composition_str())
-            label_widget.setObjectName("label_massdensity_"+str(index))
+            label_widget.setObjectName("label_massdensity_" + str(index))
             doubleSpinBox_widget = QtWidgets.QDoubleSpinBox(self.groupBox_massdensity)
             doubleSpinBox_widget.setMaximum(999.9)
             doubleSpinBox_widget.setSingleStep(0.05)
             doubleSpinBox_widget.setValue(component.get_mass_density())
-            doubleSpinBox_widget.setObjectName("doubleSpinBox_massdensity_"+str(index))
-            self.formLayout.addRow(label_widget,doubleSpinBox_widget)
+            doubleSpinBox_widget.setObjectName("doubleSpinBox_massdensity_" + str(index))
+            self.formLayout.addRow(label_widget, doubleSpinBox_widget)
+
     def update_component_and_element_list(self):
         # Update Element info.
         print("Element info.:")
         for row in range(self.formLayout_2.rowCount()):
             # print('update_component_and_element_list,itemAt-1,row:',row)
-            atomic_mass_str = self.formLayout_2.itemAt(row,QFormLayout.FieldRole).widget().text()
+            atomic_mass_str = self.formLayout_2.itemAt(row, QFormLayout.FieldRole).widget().text()
             self.element_list[row].set_atomic_mass(float(atomic_mass_str))
-            print(self.element_list[row].get_element_str(),":",self.element_list[row].get_atomic_mass(),"u")
+            print(self.element_list[row].get_element_str(), ":", self.element_list[row].get_atomic_mass(), "u")
         # Update Component info.
         print("Component info.:")
         for row in range(self.formLayout.rowCount()):
             # print('update_component_and_element_list,itemAt-2,row:',row)
-            mass_density_str = self.formLayout.itemAt(row,QFormLayout.FieldRole).widget().text()
+            mass_density_str = self.formLayout.itemAt(row, QFormLayout.FieldRole).widget().text()
             self.component_list[row].set_mass_density(float(mass_density_str))
-            print(self.component_list[row].get_composition_str(),":",self.component_list[row].get_mass_density(),"/cm^3")
+            print(self.component_list[row].get_composition_str(), ":", self.component_list[row].get_mass_density(),
+                  "/cm^3")
 
     def recalculate_contents_from_at(self):
         if self.recalculating_flag is False:
@@ -152,12 +155,15 @@ class Converter(Ui_MainWindow):
             print('Recalculate from at.%')
             self.recalculating_flag = True
             self.at_content = self.doubleSpinBox_at.value()
-            self.mass_content = at_mass_converter(component_list=self.component_list,element_list=self.element_list,at_content=self.at_content,mass_content=None)
-            self.vol_content = vol_mass_converter(component_list=self.component_list,vol_content=None,mass_content=self.mass_content)
+            self.mass_content = at_mass_converter(component_list=self.component_list, element_list=self.element_list,
+                                                  at_content=self.at_content, mass_content=None)
+            self.vol_content = vol_mass_converter(component_list=self.component_list, vol_content=None,
+                                                  mass_content=self.mass_content)
             self.doubleSpinBox_mass.setValue(self.mass_content)
             self.doubleSpinBox_vol.setValue(self.vol_content)
             self.recalculating_flag = False
             self.reestimate_spactial_from_diameter()
+
     def recalculate_contents_from_mass(self):
         if self.recalculating_flag is False:
             # 计算前必须更新一次components和element内部的atomic mass和mass density的参数
@@ -165,12 +171,15 @@ class Converter(Ui_MainWindow):
             print('Recalculate from mass.%')
             self.recalculating_flag = True
             self.mass_content = self.doubleSpinBox_mass.value()
-            self.at_content = at_mass_converter(component_list=self.component_list,element_list=self.element_list,at_content=None,mass_content=self.mass_content)
-            self.vol_content = vol_mass_converter(component_list=self.component_list,vol_content=None,mass_content=self.mass_content)
+            self.at_content = at_mass_converter(component_list=self.component_list, element_list=self.element_list,
+                                                at_content=None, mass_content=self.mass_content)
+            self.vol_content = vol_mass_converter(component_list=self.component_list, vol_content=None,
+                                                  mass_content=self.mass_content)
             self.doubleSpinBox_at.setValue(self.at_content)
             self.doubleSpinBox_vol.setValue(self.vol_content)
             self.recalculating_flag = False
             self.reestimate_spactial_from_diameter()
+
     def recalculate_contents_from_vol(self):
         if self.recalculating_flag is False:
             # 计算前必须更新一次components和element内部的atomic mass和mass density的参数
@@ -178,23 +187,26 @@ class Converter(Ui_MainWindow):
             print('Recalculate from vol.%')
             self.recalculating_flag = True
             self.vol_content = self.doubleSpinBox_vol.value()
-            self.mass_content = vol_mass_converter(component_list=self.component_list,vol_content=self.vol_content,mass_content=None)
-            self.at_content = at_mass_converter(component_list=self.component_list,element_list=self.element_list,at_content=None,mass_content=self.mass_content)
+            self.mass_content = vol_mass_converter(component_list=self.component_list, vol_content=self.vol_content,
+                                                   mass_content=None)
+            self.at_content = at_mass_converter(component_list=self.component_list, element_list=self.element_list,
+                                                at_content=None, mass_content=self.mass_content)
             self.doubleSpinBox_mass.setValue(self.mass_content)
             self.doubleSpinBox_vol.setValue(self.vol_content)
             self.recalculating_flag = False
             self.reestimate_spactial_from_diameter()
+
     def reestimate_spactial_from_diameter(self):
         if self.reestimating_flag is False:
             print('Reestimate from Diameter')
             self.reestimating_flag = True
             self.diameter = self.doubleSpinBox_estimation_diameter.value()
             if self.radioButton_estimation_fcc.isChecked():
-                sd_ratio = np.power(np.pi/(3.0*np.sqrt(2.0)*self.vol_content/100.0),1/3)-1.0
-                self.interval = self.diameter*sd_ratio
+                sd_ratio = np.power(np.pi / (3.0 * np.sqrt(2.0) * self.vol_content / 100.0), 1 / 3) - 1.0
+                self.interval = self.diameter * sd_ratio
             elif self.radioButton_estimation_bcc.isChecked():
-                sd_ratio = np.power((np.sqrt(3)*np.pi)/(8*self.vol_content/100.0),1/3)-1.0
-                self.interval = self.diameter*sd_ratio
+                sd_ratio = np.power((np.sqrt(3) * np.pi) / (8 * self.vol_content / 100.0), 1 / 3) - 1.0
+                self.interval = self.diameter * sd_ratio
             else:
                 print('Neither FCC nor BCC')
             self.doubleSpinBox_estimation_interval.setValue(self.interval)
@@ -206,17 +218,80 @@ class Converter(Ui_MainWindow):
             self.reestimating_flag = True
             self.interval = self.doubleSpinBox_estimation_interval.value()
             if self.radioButton_estimation_fcc.isChecked():
-                sd_ratio = np.power(np.pi/(3.0*np.sqrt(2.0)*self.vol_content/100.0),1/3)-1.0
-                self.diameter = self.interval/sd_ratio
+                sd_ratio = np.power(np.pi / (3.0 * np.sqrt(2.0) * self.vol_content / 100.0), 1 / 3) - 1.0
+                self.diameter = self.interval / sd_ratio
             elif self.radioButton_estimation_bcc.isChecked():
-                sd_ratio = np.power((np.sqrt(3)*np.pi)/(8*self.vol_content/100.0),1/3)-1.0
-                self.diameter = self.interval/sd_ratio
+                sd_ratio = np.power((np.sqrt(3) * np.pi) / (8 * self.vol_content / 100.0), 1 / 3) - 1.0
+                self.diameter = self.interval / sd_ratio
             else:
                 print('Neither FCC nor BCC')
             self.doubleSpinBox_estimation_diameter.setValue(self.diameter)
             self.reestimating_flag = False
 
-def at_mass_converter(component_list,element_list,at_content:float=None,mass_content:float=None)->float:
+
+class ComponentManagementDialog(Ui_ComponentManagementDialog):
+
+    def __init__(self,common_component_tool:CommonComponentTool):
+        print('ParametersRangeSettingDialog Init')
+        self.common_component_tool = common_component_tool
+        self.component_input = ''
+        self.mass_density_input = 0.0
+
+    def setupUi(self, ComponentManagementDialog):
+        Ui_ComponentManagementDialog.setupUi(self, ComponentManagementDialog)
+        icon = QIcon()
+        icon.addPixmap(QPixmap(":/icon/ユウカ.ico"), QIcon.Normal, QIcon.Off)
+        ComponentManagementDialog.setWindowIcon(icon)
+        self.fill_groupBox_all()
+        self.lineEdit_component.textChanged.connect(self.on_lineEdie_component_textChanged)
+        self.doubleSpinBox_massdensity.valueChanged.connect(self.on_doubleSpinBox_massdensity_valueChanged)
+        self.pushButton_add.clicked.connect(self.on_pushButton_add_clicked)
+        self.pushButton_delete.clicked.connect(self.on_pushButton_delete_clicked)
+
+
+    def fill_groupBox_all(self):
+        #把所有的Common Component加入到其中
+        if self.gridLayout.count() > 1:
+            # 删除除了第一个之外的所有想
+            for i in range(1, self.gridLayout.rowCount()):
+                for j in range(1, self.gridLayout.columnCount()):
+                    item = self.gridLayout.itemAtPosition(i, j)
+                    if item:
+                        widget = item.widget()
+                        if widget:
+                            widget.deleteLater()
+        common_component_dict = self.common_component_tool.get_all_common_component()
+        num = 1
+        for key,value in common_component_dict.items():
+            label_str = key + ': ' + str(value) + ' g/cm^3'
+            label_widget = QtWidgets.QLabel(self.groupBox_all)
+            label_widget.setText(label_str)
+            label_widget.setStyleSheet("background-color:white")
+            label_widget.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+            label_widget.setObjectName("label_eg")
+            self.gridLayout.addWidget(label_widget, int(num/2), int(num%2), 1, 1, QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+            num += 1
+    def on_lineEdie_component_textChanged(self):
+        self.component_input = self.lineEdit_component.text()
+
+    def on_doubleSpinBox_massdensity_valueChanged(self):
+        self.mass_density_input = float(self.doubleSpinBox_massdensity.value())
+
+    def on_pushButton_add_clicked(self):
+        self.common_component_tool.add_common_component(self.component_input,self.mass_density_input)
+        self.fill_groupBox_all()
+
+    def on_pushButton_delete_clicked(self):
+        self.common_component_tool.delete_common_component(self.component_input)
+        self.fill_groupBox_all()
+
+
+
+
+
+
+
+def at_mass_converter(component_list, element_list, at_content: float = None, mass_content: float = None) -> float:
     # (a+b+d)/(aA+bB+dD) term
     # TODO:以后可能会出现多组分的substance或者media，这里则需要改写
     substance_compoennt = component_list[0]
@@ -228,9 +303,9 @@ def at_mass_converter(component_list,element_list,at_content:float=None,mass_con
         term_substance_top += subscript
         for element in element_list:
             if element_str == element.get_element_str():
-                term_substance_bot += subscript*element.get_atomic_mass()
+                term_substance_bot += subscript * element.get_atomic_mass()
                 break
-    term_substance = term_substance_top/term_substance_bot
+    term_substance = term_substance_top / term_substance_bot
     term_media_top = 0.0
     term_media_bot = 0.0
     for index, element_str in enumerate(media_compoennt.get_element_list()):
@@ -238,41 +313,57 @@ def at_mass_converter(component_list,element_list,at_content:float=None,mass_con
         term_media_top += subscript
         for element in element_list:
             if element_str == element.get_element_str():
-                term_media_bot += subscript*element.get_atomic_mass()
+                term_media_bot += subscript * element.get_atomic_mass()
                 break
-    term_media=term_media_top/term_media_bot
-    print("Substance term:",term_substance_top,term_substance_bot,term_substance)
-    print("Media term:",term_media_top,term_media_bot,term_media)
+    term_media = term_media_top / term_media_bot
+    print("Substance term:", term_substance_top, term_substance_bot, term_substance)
+    print("Media term:", term_media_top, term_media_bot, term_media)
 
     if at_content is not None:
         # at计算mass
-        mass_content = (at_content/term_substance)/(at_content/term_substance+(100-at_content)/term_media)*100
+        mass_content = (at_content / term_substance) / (
+                    at_content / term_substance + (100 - at_content) / term_media) * 100
         return mass_content
     else:
         # mass计算at
-        at_content = (mass_content*term_substance)/(mass_content*term_substance+(100-mass_content)*term_media)*100
+        at_content = (mass_content * term_substance) / (
+                    mass_content * term_substance + (100 - mass_content) * term_media) * 100
         return at_content
 
-def vol_mass_converter(component_list,vol_content:float=None,mass_content:float=None)->float:
+
+def vol_mass_converter(component_list, vol_content: float = None, mass_content: float = None) -> float:
     # TODO:以后可能会出现多组分的substance或者media，这里则需要改写
     mass_density_substance = component_list[0].get_mass_density()
     mass_density_media = component_list[1].get_mass_density()
     if vol_content is not None:
         # vol计算mass
-        mass_content = (vol_content*mass_density_substance)/(vol_content*mass_density_substance+(100-vol_content)*mass_density_media)*100
+        mass_content = (vol_content * mass_density_substance) / (
+                    vol_content * mass_density_substance + (100 - vol_content) * mass_density_media) * 100
         return mass_content
     else:
         # mass计算vol
-        vol_content = (mass_content/mass_density_substance)/(mass_content/mass_density_substance+(100-mass_content)/mass_density_media)*100
+        vol_content = (mass_content / mass_density_substance) / (
+                    mass_content / mass_density_substance + (100 - mass_content) / mass_density_media) * 100
         return vol_content
+
 
 def on_Action_quit():
     sys.exit()
 
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
+    # 这里需要在当前目录下没哟json的文件夹的时候创建一个文件夹并写入默认的json
+    user_data_dir = app.applicationDirPath()  # 获取应用程序的路径
+    user_data_dir = os.path.join(user_data_dir, "userdata")  # 拼接子目录
+    os.makedirs(user_data_dir, exist_ok=True)  # 确保目录存在
     mainWindow = QtWidgets.QMainWindow()
-    converter = Converter()
+    componentManagementDialog = QtWidgets.QDialog()
+    common_component_tool = CommonComponentTool(user_data_dir)
+    converter = Converter(common_component_tool=common_component_tool)
+    componentManagementWindow = ComponentManagementDialog(common_component_tool=common_component_tool)
     converter.setupUi(mainWindow)
+    componentManagementWindow.setupUi(componentManagementDialog)
+    converter.actionComponent_Manegement.triggered.connect(componentManagementDialog.show)
     mainWindow.show()
     sys.exit(app.exec_())

@@ -21,15 +21,18 @@ def search_atomic_mass(element_str:str)->float:
             print('Time out, retrying...')
             retries += 1
     if retries == 3:
-        return 0.0
+        return 0.01
     else:
         soup = BeautifulSoup(response.content, 'html.parser')
-        atomic_mass_tag = soup.find_all('td')[11]
-        atomic_mass_withspace = re.sub(r'\([^)]*\)', '', atomic_mass_tag.text)
-        atomic_mass = atomic_mass_withspace.replace(' ', '').replace(' ','')
-        if atomic_mass.startswith("[") and atomic_mass.endswith("]"):
-            atomic_mass = atomic_mass[1:-1].split(",")[0]
-        return float(atomic_mass)
+        atomic_mass_tag_list = soup.find_all('td')
+        if atomic_mass_tag_list == []:
+            return 0.01
+        else:
+            atomic_mass_withspace = re.sub(r'\([^)]*\)', '', atomic_mass_tag_list[11].text)
+            atomic_mass = atomic_mass_withspace.replace(' ', '').replace(' ','')
+            if atomic_mass.startswith("[") and atomic_mass.endswith("]"):
+                atomic_mass = atomic_mass[1:-1].split(",")[0]
+            return float(atomic_mass)
 
 
 if __name__ == "__main__":

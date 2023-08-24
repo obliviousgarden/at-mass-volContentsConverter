@@ -1,16 +1,16 @@
 # 目的是从str中解析出物质的组分，并包含组分中元素的含量
 from utils.component import Component
 from utils.element import Element
-from utils.common_components import get_common_component
+from utils.common_components import CommonComponentTool
 from utils.common_elements_NIST import search_atomic_mass
 
 
-def split_substance_and_media(substance_str: str, media_str: str):
+def split_substance_and_media(common_component_tool:CommonComponentTool,substance_str: str, media_str: str):
     # 1 在common component中匹配
     # 2-A 如果找到了 输出既有的component_list和mass_density_list
     # 2-B 如果没找到 那么输出重新构造的component_list和mass_density_list
-    substance_component = get_common_component(substance_str)
-    media_component = get_common_component(media_str)
+    substance_component = common_component_tool.get_common_component(substance_str)
+    media_component = common_component_tool.get_common_component(media_str)
     if substance_component is None:
         substance_component = Component(substance_str, 1.0)
     if media_component is None:
